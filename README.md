@@ -5,9 +5,9 @@
 
 This example demonstrates how to :
 
-* generate a library containing a procedure written in ARMv7 GNU ASsembly;
-* call this procedure from a Android app using the JNI;
-* use the returned value in the Android app and display it.
+* generate a library containing a procedure written in ARMv7 GNU ASsembly
+* call this procedure from a Android app using the JNI
+* use the returned value in the Android app and display it
 
 # Requirements
 
