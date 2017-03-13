@@ -9,17 +9,20 @@ This example demonstrates how to :
 * call this procedure from a Android app using the JNI
 * use the returned value in the Android app and display it
 
-# Requirements
+# Building
+## Building using GNU Make
+
+### Requirements
 
 * GNU AS
 * Gold linker
 * An ARM Android phone/emulator on which you have installation privileges
 
-# Build
+### Build
 
 Run `make` from this folder
 
-## Manually
+#### Manually
 
 Run the following commands :
 
@@ -32,6 +35,27 @@ $PREFIX-ld.gold -shared --dynamic-linker=/system/bin/linker -shared --hash-style
 cp libwildAssembly.so $DEST/armeabi/libwildAssembly.so
 cp libwildAssembly.so $DEST/armeabi-v7a/libwildAssembly.so
 ```
+## Building using Android ndk-build
+
+### Requirements
+
+* The Android NDK path in your system's PATH directory
+
+### Build
+
+Open a shell or a *command window* in this folder and :
+* On Windows, run 'mkbuild'
+* On Linux, run 'mkbuild.sh'
+
+# Installing the prepared APK
+
+* Connect your ARMv7 Android phone/emulator
+* open a shell or a "command window"
+* `cd` to the **apk** folder
+
+Then :
+* On Windows run `gradlew installDebug`.
+* On Linux run `./gradlew installDebug`
 
 # Install
 
