@@ -5,16 +5,32 @@
    pointers is equivalent to : 
 
      Number of functions pointers declared before the desired function
-     pointer * Size in bytes of a function address (4 in 32-bit)
+     pointer * Size in bytes of a function address (8 in 32-bit)
 
    However, note that such calculations are not necessary for the JNI
-   as its documentation already provides the addresses of each 
-   pointer.
+   as its documentation already provides the index of each of its
+   functions. So you just have to multiply the offset provided by the
+   documentation by 8.
+   
+   Example :
+   
 */
 
 msg:
   .asciz  "A wild Assembly appears !\n(Level 64)\n"
 msg_len = . - msg
+
+/* Note
+   x19..x28 are callee-saved registers, meaning that :
+   - We must save their values somewhere (in the stack most frequently)
+     if we want to write in them.
+   - Their value should be preserved after calling other procedures
+     if they follow the ARMv8 64 bits Application Procedure Call
+     Standard
+   Avoid using x9..x15 as they are caller-saved registers, meaning that
+   you have to save them before calling any sub-procedure since their
+   value can be overwritten by these sub-procedures.
+*/
 
 /* This example gambles on the fact that unused arguments registers
    will actually be unused.
