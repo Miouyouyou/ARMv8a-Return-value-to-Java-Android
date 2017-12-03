@@ -1,9 +1,10 @@
 .data
 
-/* Note : Calculting offset in a structure containing only function 
-          pointers is equivalent to : 
+/* Note
+   Calculting offset in a structure containing only function 
+   pointers is equivalent to : 
 
-     Number of functions pointers declared before the desired function 
+     Number of functions pointers declared before the desired function
      pointer * Size in bytes of a function address (4 in 32-bit)
 
    However, note that such calculations are not necessary for the JNI
@@ -12,65 +13,73 @@
 */
 
 msg:
-  .ascii  "A wild Assembly appears !\n"
+  .asciz  "A wild Assembly appears !\n(Level 64)\n"
 msg_len = . - msg
 
+/* This example gambles on the fact that unused arguments registers
+   will actually be unused.
+   Meaning that functions officially taking 3 arguments in x0, x1 and x2
+   won't try to secretly read a potential argument stored in x3. */
 .text
-.align 2
+.align 4
 .globl Java_your_pack_testactivity_TestActivity_testMe
 .type Java_your_pack_testactivity_TestActivity_testMe, %function
 Java_your_pack_testactivity_TestActivity_testMe:
-  stmfd sp!, {r4-r6, lr} // Prologue. We will use r4 and r6.
-                         // Is push more useful than stmfd ?
+  sub sp, sp,  32         // Generate some stack space to push x19..x21 and lr
+                          // 4 registers of 8 bytes each -> 32 bytes needed
+  stp x19, x20, [sp]      // Push x19, x20
+  stp x21, lr, [sp,16]    // Push x21, lr (x30)
 
-  // Useful passed parameters - r0 : *_JNIEnv
-  mov r4, r0         // Save *_JNIEnv for the second method
+  // Useful passed parameters - x0 : *_JNIEnv
+  mov x19, x0             // x19 <- *_JNIEnv - Save *_JNIEnv for the second method
 
-  // Preparing to call NewByteArray(*_JNIEnv : r0, size_of_array : r1).
+  // Preparing to call NewByteArray(*_JNIEnv : x0, size_of_array : x1).
   // *_JNIEnv is already loaded.
-  mov r1, #msg_len   // r1 : size_of_array = msg_len
-  ldr r5, [r0]       // Getting NewByteArray : Get *JNINativeInterface
-                     // from *_JNIEnv.
-                     // *JNINativeInterface is preserved for later use.
-  ldr r3, [r5, #704] // Get *JNINativeInterface->NewByteArray.
-                     // +704 is NewByteArray 's offset
-  blx r3             // r0 : *bytearray <- NewByteArray(*_JNIEnv : r0,
-                     //                            size_of_array : r1)  
-  mov r6, r0         // We need to keep *bytearray elsewhere as it will 
-                     // be returned by our procedure.
-                     // r0 is needed for *_JNIEnv
-    
+  mov x1, #msg_len        // x1 <- msg_len value - Used to set requested byte array size
+  ldr x20, [x0]           // Getting NewByteArray : Get *JNINativeInterface
+                          // from *_JNIEnv.
+                          // *JNINativeInterface is preserved for later use.
+  ldr x2, [x20, 1408]     // Get *JNINativeInterface->NewByteArray.
+                          // +1408 is NewByteArray 's offset
+
+  blr x2                  // x0 : *bytearray <- NewByteArray(*_JNIEnv : x0,
+                          //                            size_of_array : x1)  
+
+  mov x21, x0             // x21 <- *bytearray
+                          // We need to keep the returned *bytearray elsewhere
+                          // as it will be returned by our procedure.
+                          // Since we need to call other procedures before,
+                          // x0 is needed for *_JNIEnv and x0 can be overwritten
+                          // by any procedure called anyway, we keep that value
+                          // safe in x21, which is callee-saved.
   /* Preparing to call 
-     *JNativeInteface->SetByteArrayRegion(*_JNIEnv : r0, 
-                                        *bytearray : r1, 
-                                                 0 : r2, 
-                                 int bytes_to_copy : r3, 
-                                             *from : sp) */  
+     *JNativeInteface->SetByteArrayRegion(*_JNIEnv : x0, 
+                                        *bytearray : x1, 
+                                                 0 : x2, 
+                                 int bytes_to_copy : x3, 
+                                             *from : x4) */  
+  ldr x5, [x20, 1664]     // x20 <- [x20, #1664] : 
+                          // *JNativeInterface->SetByteArrayRegion (+1664).*/
+                          
+  mov x1, x0              // x1 <- *bytearray - Our Java byte array (address) to fill up
+  mov x0, x19             // x0 <- *_JNIEnv - Previously saved in x19  
+  mov x2, 0               // x2 <- 0 - The source array offset. We copy the
+                          //           entire message (msg) so we start from 0.
+  mov x3, #msg_len        // x3 <- bytes_to_copy = msg_len  
+  adr x4, msg             // x4 <- *from = msg address (aka. *msg in C)
+                          //       Our ASCII message we wish to store inside
+                          //       the created Java byte[] array
+  blr x5                  // SetByteArrayRegion(*_JNIEnv : x0, 
+                          //                  *bytearray : x1, 
+                          //                           0 : x2, 
+                          //                     msg_len : x3, 
+                          //                        *msg : x4)  
+
+  mov x0, x21             // x0 <- *bytearray : The Java byte array
+                          //       (address), now filled with our message.
+
+  ldp x19, x20, [sp]      // Pop the registers : Load their previously saved values.
+  ldp x21, lr, [sp, 16]   // See the first instructions of this routine.
+  add sp, sp, 32
   
-  mov r1, r0         // r1 : *bytearray - The return value of 
-                     //      NewByteArray  
-  mov r0, r4         // r0 : *_JNIEnv - Previously saved in r4  
-  mov r2, #0         // r2 : 0 - Define the starting index for the 
-                     //      array-copy procedure of SetByteArrayRegion  
-  mov r3, #msg_len   // r3 : bytes_to_copy = msg_len  
-  sub sp, sp, #4     // Preparing the stack in which we'll store the 
-                     // address of msg  
-  ldr r4, =msg       // We won't need our previous copy of *_JNIEnv 
-                     // anymore, so we replace it by *msg.  
-  str r4, [sp]       // sp : *from = msg address - the native byte array
-                     // to copy inside the Java byte[] array  
-  ldr r5, [r5, #832] // r5 <- [r5, #832] : 
-                     // *JNativeInterface->SetByteArrayRegion (+832). 
-                     // We don't need r5 after this so we store the 
-                     // function address directly in it.  
-  blx r5             // SetByteArrayRegion(*_JNIEnv : r0, 
-                     //                  *bytearray : r1, 
-                     //                           0 : r2, 
-                     //                 size_of_msg : r3, 
-                     //                        *msg : sp)  
-    
-  add sp, sp, #4         // Get our stack space back !  
-  mov r0, r6             // *bytearray : Our return value  
-  ldmfd sp!, {r4-r6, pc} // Restoring the scratch-registers and 
-                         // returning by loading the link-register 
-                         // into the program-counter
+  ret

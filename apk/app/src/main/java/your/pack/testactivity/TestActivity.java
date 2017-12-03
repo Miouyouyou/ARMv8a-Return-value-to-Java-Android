@@ -3,7 +3,9 @@ package your.pack.testactivity;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.TextView;
-	
+
+import java.util.Locale;
+
 public class TestActivity extends AppCompatActivity {
 	
 	/* Basically, the android system will look for a "libwildAssembly.so" 
@@ -34,7 +36,9 @@ public class TestActivity extends AppCompatActivity {
 
 		TextView mContentView =
 			(TextView) findViewById(R.id.fullscreen_content);
-		mContentView.setText(new String(testMe()));
+		/*new String(testMe())*/
+		String string_displayed = new String(testMe());
+		mContentView.setText(string_displayed);
 
 	}
 	
