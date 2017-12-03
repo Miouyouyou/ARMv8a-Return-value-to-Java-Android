@@ -1,3 +1,4 @@
+# /!\ OUTDATED FOR THE MOMENT /!\ #
 
 
 # Example of calling the JNI directly from ARM Assembly on Android
