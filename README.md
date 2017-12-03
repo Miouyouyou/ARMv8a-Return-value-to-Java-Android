@@ -9,8 +9,8 @@ If you appreciate this project, support me on Patreon !
 This example demonstrates how to :
 
 * assemble a library written with the ARMv8-A 64 bits GNU ASsembly syntax
-* call this procedure from a Android app using the JNI
-* display the value returned by this procedure in the Android app
+* call a native procedure, defined in this library, from a Android app using the JNI
+* display the value returned by this native procedure in the Android app
 
 # Building
 ## Building using GNU Make
@@ -35,8 +35,8 @@ export PREFIX="aarch64-linux-gnu-"
 export DEST="./apk/app/src/main/jniLibs"
 $PREFIX-as -o wild.o wild.s
 $PREFIX-ld.gold -shared --dynamic-linker=/system/bin/linker -shared --hash-style=sysv -o libwildAssembly.so wild.o
-cp libwildAssembly.so $DEST/armeabi/libwildAssembly.so
-cp libwildAssembly.so $DEST/armeabi-v7a/libwildAssembly.so
+mkdir -p $DEST/arm64-v8a
+cp libwildAssembly.so $DEST/arm64-v8a/libwildAssembly.so
 ```
 ## Building using Android ndk-build
 
